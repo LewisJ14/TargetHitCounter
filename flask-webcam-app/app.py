@@ -15,10 +15,10 @@ app = Flask(__name__)
 LIBCAMERA_VID_PORT = 8081
 
 def start_libcamera_vid():
-    # Check if already running
     import psutil
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-        if 'libcamera-vid' in ' '.join(proc.info['cmdline']):
+        cmdline = proc.info.get('cmdline')
+        if cmdline and 'libcamera-vid' in ' '.join(cmdline):
             return  # Already running
     # Start libcamera-vid as MJPEG server
     cmd = [
