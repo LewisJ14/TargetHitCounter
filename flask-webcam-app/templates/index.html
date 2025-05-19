@@ -19,8 +19,12 @@
     <h1 class="mb-4 text-center">🎯 Target Hit Counter</h1>
     <div class="row g-4">
         <div class="col-lg-7">
-            <div class="mb-3">
-                <img src="{{ url_for('video_feed') }}" class="img-fluid webcam-view" alt="Webcam Feed">
+            <div class="mb-3 position-relative">
+                <img id="webcam-feed" src="{{ url_for('video_feed') }}" class="img-fluid webcam-view" alt="Webcam Feed"
+                     onerror="this.style.display='none';document.getElementById('webcam-placeholder').style.display='flex';">
+                <div id="webcam-placeholder" style="display:none;align-items:center;justify-content:center;height:360px;background:#e9ecef;border-radius:10px;box-shadow:0 2px 8px #0001;position:absolute;top:0;left:0;width:100%;">
+                    <span class="text-muted fs-4">Webcam Preview Unavailable</span>
+                </div>
             </div>
             <form id="bg-form" class="mb-3">
                 <button type="submit" class="btn btn-outline-primary">Set Target Background</button>
