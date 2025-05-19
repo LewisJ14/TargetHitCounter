@@ -11,17 +11,12 @@ import sys
 app = Flask(__name__)
 
 def open_camera():
-    # Try /dev/video0 with V4L2 backend (most common for Pi)
+    # Try /dev/video0 with V4L2 backend (best for Pi + OV5647)
     cam = cv2.VideoCapture(0, cv2.CAP_V4L2)
     if cam.isOpened():
         print("Camera opened with CAP_V4L2 at index 0")
         return cam
-    # Try /dev/video1 if you have multiple cameras
-    cam = cv2.VideoCapture(1, cv2.CAP_V4L2)
-    if cam.isOpened():
-        print("Camera opened with CAP_V4L2 at index 1")
-        return cam
-    # Fallback: try default backend
+    # Try default backend as fallback
     cam = cv2.VideoCapture(0)
     if cam.isOpened():
         print("Camera opened with default backend at index 0")
