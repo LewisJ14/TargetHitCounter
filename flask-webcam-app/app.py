@@ -110,21 +110,6 @@ def screenshot(filename):
 def index():
     return render_template('index.html', scores=scores)
 
-# Video feed at 10 FPS
-def generate_frames():
-    while True:
-        frame = get_latest_frame()
-        if frame is not None:
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame_bytes = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-        time.sleep(0.1)  # 10 FPS
-
-@app.route('/video_feed')
-def video_feed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
 # Capture background image
 @app.route('/capture_background', methods=['POST'])
 def capture_background():
