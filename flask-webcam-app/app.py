@@ -113,11 +113,14 @@ def index():
 # Capture background image
 @app.route('/capture_background', methods=['POST'])
 def capture_background():
+    print("Attempting to capture background...")
     frame = capture_frame_libcamera()
     if frame is not None:
         cv2.imwrite(BACKGROUND_FILE, frame)
+        print("Background captured and saved.")
         return jsonify({'success': True})
-    return jsonify({'success': False})
+    print("Failed to capture background: capture_frame_libcamera returned None")
+    return jsonify({'success': False, 'error': 'Failed to capture background'})
 
 def load_background():
     if os.path.exists(BACKGROUND_FILE):
@@ -146,13 +149,17 @@ def mark_hits(frame, hit_points):
 @app.route('/register_hit', methods=['POST'])
 def register_hit():
     shooter = request.form['shooter']
+    print(f"Register hit called for shooter: {shooter}")
     if shooter in scores:
         background = load_background()
         if background is None:
+            print("No background set.")
             return jsonify({'success': False, 'error': 'No background set'})
         frame = capture_frame_libcamera()
         if frame is not None:
+            print("Captured frame for hit detection.")
             hit_points = detect_hits(background, frame)
+            print(f"Hit points detected: {hit_points}")
             if hit_points:
                 mark_hits(frame, hit_points)
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
