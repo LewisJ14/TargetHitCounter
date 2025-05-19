@@ -4,6 +4,8 @@ import os
 import json
 from datetime import datetime
 import numpy as np
+import threading
+import time
 
 app = Flask(__name__)
 
@@ -13,6 +15,28 @@ SCORES_FILE = 'scores.json'
 SCREENSHOTS_DIR = 'screenshots'
 BACKGROUND_FILE = 'background.jpg'
 os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+
+# Shared frame and lock
+latest_frame = None
+frame_lock = threading.Lock()
+
+def camera_capture_thread():
+    global latest_frame
+    while True:
+        success, frame = camera.read()
+        if success:
+            with frame_lock:
+                latest_frame = frame.copy()
+        time.sleep(0.1)  # 10 FPS
+
+# Start camera thread
+threading.Thread(target=camera_capture_thread, daemon=True).start()
+
+def get_latest_frame():
+    with frame_lock:
+        if latest_frame is not None:
+            return latest_frame.copy()
+        return None
 
 # Load or initialize scores
 def load_scores():
@@ -65,17 +89,16 @@ def screenshot(filename):
 def index():
     return render_template('index.html', scores=scores)
 
-# Video feed
+# Video feed at 10 FPS
 def generate_frames():
     while True:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
+        frame = get_latest_frame()
+        if frame is not None:
             ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
+            frame_bytes = buffer.tobytes()
             yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        time.sleep(0.1)  # 10 FPS
 
 @app.route('/video_feed')
 def video_feed():
@@ -84,8 +107,8 @@ def video_feed():
 # Capture background image
 @app.route('/capture_background', methods=['POST'])
 def capture_background():
-    success, frame = camera.read()
-    if success:
+    frame = get_latest_frame()
+    if frame is not None:
         cv2.imwrite(BACKGROUND_FILE, frame)
         return jsonify({'success': True})
     return jsonify({'success': False})
@@ -121,8 +144,8 @@ def register_hit():
         background = load_background()
         if background is None:
             return jsonify({'success': False, 'error': 'No background set'})
-        success, frame = camera.read()
-        if success:
+        frame = get_latest_frame()
+        if frame is not None:
             hit_points = detect_hits(background, frame)
             if hit_points:
                 mark_hits(frame, hit_points)
@@ -136,6 +159,8 @@ def register_hit():
                 return jsonify({'success': True, 'filename': filename, 'score': scores[shooter]['score'], 'hits': len(hit_points)})
             else:
                 return jsonify({'success': False, 'error': 'No hits detected'})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to capture picture'})
     return jsonify({'success': False})
 
 if __name__ == '__main__':
