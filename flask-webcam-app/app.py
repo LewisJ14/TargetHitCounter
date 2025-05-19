@@ -12,7 +12,7 @@ import tempfile
 
 app = Flask(__name__)
 
-LIBCAMERA_VID_PORT = 8081
+LIBCAMERA_VID_PORT = 8091
 
 def start_libcamera_vid():
     import psutil
