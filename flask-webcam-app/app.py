@@ -31,48 +31,10 @@ def start_libcamera_vid():
     ]
     subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-def open_camera():
-    # Try /dev/video0 with V4L2 backend (best for Pi + OV5647)
-    cam = cv2.VideoCapture(0, cv2.CAP_V4L2)
-    if cam.isOpened():
-        print("Camera opened with CAP_V4L2 at index 0")
-        return cam
-    # Try default backend as fallback
-    cam = cv2.VideoCapture(0)
-    if cam.isOpened():
-        print("Camera opened with default backend at index 0")
-        return cam
-    print("Failed to open camera. Please check device connection and permissions.")
-    sys.exit(1)
-
-camera = open_camera()
-
 SCORES_FILE = 'scores.json'
 SCREENSHOTS_DIR = 'screenshots'
 BACKGROUND_FILE = 'background.jpg'
 os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
-
-# Shared frame and lock
-latest_frame = None
-frame_lock = threading.Lock()
-
-def camera_capture_thread():
-    global latest_frame
-    while True:
-        success, frame = camera.read()
-        if success:
-            with frame_lock:
-                latest_frame = frame.copy()
-        time.sleep(0.1)  # 10 FPS
-
-# Start camera thread
-threading.Thread(target=camera_capture_thread, daemon=True).start()
-
-def get_latest_frame():
-    with frame_lock:
-        if latest_frame is not None:
-            return latest_frame.copy()
-        return None
 
 def capture_frame_libcamera():
     with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmpfile:
