@@ -19,12 +19,16 @@
     <h1 class="mb-4 text-center">🎯 Target Hit Counter</h1>
     <div class="row g-4">
         <div class="col-lg-7">
-            <div class="mb-3 position-relative">
-                <img id="webcam-feed" src="{{ url_for('video_feed') }}" class="img-fluid webcam-view" alt="Webcam Feed"
-                     onerror="this.style.display='none';document.getElementById('webcam-placeholder').style.display='flex';">
-                <div id="webcam-placeholder" style="display:none;align-items:center;justify-content:center;height:360px;background:#e9ecef;border-radius:10px;box-shadow:0 2px 8px #0001;position:absolute;top:0;left:0;width:100%;">
+            <div class="mb-3 position-relative" style="height:360px;">
+                <div id="webcam-placeholder"
+                     style="align-items:center;justify-content:center;height:100%;background:#e9ecef;border-radius:10px;box-shadow:0 2px 8px #0001;position:absolute;top:0;left:0;width:100%;z-index:1;display:flex;">
                     <span class="text-muted fs-4">Webcam Preview Unavailable</span>
                 </div>
+                <img id="webcam-feed" src="{{ url_for('video_feed') }}" class="img-fluid webcam-view"
+                     alt="Webcam Feed"
+                     style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:2;"
+                     onload="this.style.display='block';document.getElementById('webcam-placeholder').style.display='none';"
+                     onerror="this.style.display='none';document.getElementById('webcam-placeholder').style.display='flex';">
             </div>
             <form id="bg-form" class="mb-3">
                 <button type="submit" class="btn btn-outline-primary">Set Target Background</button>

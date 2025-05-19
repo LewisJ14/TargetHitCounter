@@ -6,10 +6,30 @@ from datetime import datetime
 import numpy as np
 import threading
 import time
+import sys
 
 app = Flask(__name__)
 
-camera = cv2.VideoCapture(0)
+def open_camera():
+    # Try /dev/video0 with V4L2 backend (most common for Pi)
+    cam = cv2.VideoCapture(0, cv2.CAP_V4L2)
+    if cam.isOpened():
+        print("Camera opened with CAP_V4L2 at index 0")
+        return cam
+    # Try /dev/video1 if you have multiple cameras
+    cam = cv2.VideoCapture(1, cv2.CAP_V4L2)
+    if cam.isOpened():
+        print("Camera opened with CAP_V4L2 at index 1")
+        return cam
+    # Fallback: try default backend
+    cam = cv2.VideoCapture(0)
+    if cam.isOpened():
+        print("Camera opened with default backend at index 0")
+        return cam
+    print("Failed to open camera. Please check device connection and permissions.")
+    sys.exit(1)
+
+camera = open_camera()
 
 SCORES_FILE = 'scores.json'
 SCREENSHOTS_DIR = 'screenshots'
