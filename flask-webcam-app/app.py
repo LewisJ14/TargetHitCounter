@@ -7,8 +7,29 @@ import numpy as np
 import threading
 import time
 import sys
+import subprocess
+import tempfile
 
 app = Flask(__name__)
+
+LIBCAMERA_VID_PORT = 8081
+
+def start_libcamera_vid():
+    # Check if already running
+    import psutil
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        if 'libcamera-vid' in ' '.join(proc.info['cmdline']):
+            return  # Already running
+    # Start libcamera-vid as MJPEG server
+    cmd = [
+        "libcamera-vid",
+        "--inline",
+        "-t", "0",
+        "--width", "640",
+        "--height", "480",
+        "-o", f"tcp://0.0.0.0:{LIBCAMERA_VID_PORT}"
+    ]
+    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def open_camera():
     # Try /dev/video0 with V4L2 backend (best for Pi + OV5647)
@@ -51,6 +72,29 @@ def get_latest_frame():
     with frame_lock:
         if latest_frame is not None:
             return latest_frame.copy()
+        return None
+
+def capture_frame_libcamera():
+    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmpfile:
+        tmp_path = tmpfile.name
+    # Capture image using libcamera-still
+    cmd = [
+        "libcamera-still",
+        "-o", tmp_path,
+        "--width", "640",
+        "--height", "480",
+        "--nopreview",
+        "-t", "1"
+    ]
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        frame = cv2.imread(tmp_path)
+        os.remove(tmp_path)
+        return frame
+    except Exception as e:
+        print(f"libcamera-still failed: {e}")
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
         return None
 
 # Load or initialize scores
@@ -122,7 +166,7 @@ def video_feed():
 # Capture background image
 @app.route('/capture_background', methods=['POST'])
 def capture_background():
-    frame = get_latest_frame()
+    frame = capture_frame_libcamera()
     if frame is not None:
         cv2.imwrite(BACKGROUND_FILE, frame)
         return jsonify({'success': True})
@@ -159,7 +203,7 @@ def register_hit():
         background = load_background()
         if background is None:
             return jsonify({'success': False, 'error': 'No background set'})
-        frame = get_latest_frame()
+        frame = capture_frame_libcamera()
         if frame is not None:
             hit_points = detect_hits(background, frame)
             if hit_points:
@@ -179,4 +223,5 @@ def register_hit():
     return jsonify({'success': False})
 
 if __name__ == '__main__':
+    start_libcamera_vid()
     app.run(host='0.0.0.0', port=5002, debug=True)

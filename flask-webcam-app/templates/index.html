@@ -24,7 +24,7 @@
                      style="align-items:center;justify-content:center;height:100%;background:#e9ecef;border-radius:10px;box-shadow:0 2px 8px #0001;position:absolute;top:0;left:0;width:100%;z-index:1;display:flex;">
                     <span class="text-muted fs-4">Webcam Preview Unavailable</span>
                 </div>
-                <img id="webcam-feed" src="{{ url_for('video_feed') }}" class="img-fluid webcam-view"
+                <img id="webcam-feed" src="http://{{ request.host.split(':')[0] }}:8081/" class="img-fluid webcam-view"
                      alt="Webcam Feed"
                      style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:2;"
                      onload="this.style.display='block';document.getElementById('webcam-placeholder').style.display='none';"
